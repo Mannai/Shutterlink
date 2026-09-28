@@ -27,6 +27,10 @@
 </p>
 
 <p align="center">
+  <a href="docs/media/shutterlink-demo.mp4"><img src="docs/media/demo-poster.jpg" width="880" alt="Watch the 20-second Shutterlink demo"></a>
+</p>
+
+<p align="center">
   <img src="docs/media/how-it-works.svg" width="880" alt="Canon EOS camera connects over USB to Shutterlink, which appears as a camera in Zoom, Teams, Discord, OBS, browsers and the Windows Camera app">
 </p>
 
