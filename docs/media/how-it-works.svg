@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 230" width="880" height="230" font-family="Segoe UI, -apple-system, Helvetica, Arial, sans-serif">
+  <style>
+    .card { fill: #ffffff; stroke: #d0d7de; }
+    .title { fill: #1f2328; font-size: 17px; font-weight: 600; }
+    .sub { fill: #59636e; font-size: 13px; }
+    .label { fill: #59636e; font-size: 12.5px; }
+    .flow { stroke: #2563eb; }
+    .flowhead { fill: #2563eb; }
+    .chip { fill: #eef3fe; stroke: #c7d7fb; }
+    .chiptext { fill: #1d4ed8; font-size: 13px; font-weight: 600; }
+    .body { fill: #2b2f36; }
+    .lensring { fill: #9aa1ad; }
+    .brand { fill: #2563eb; }
+    @media (prefers-color-scheme: dark) {
+      .card { fill: #161b22; stroke: #30363d; }
+      .title { fill: #e6edf3; }
+      .sub, .label { fill: #8d96a0; }
+      .flow { stroke: #4f8cff; }
+      .flowhead { fill: #4f8cff; }
+      .chip { fill: #132341; stroke: #24406f; }
+      .chiptext { fill: #8ab4ff; }
+      .body { fill: #3a404a; }
+    }
+  </style>
+  <defs>
+    <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4f8ee6"/>
+      <stop offset="1" stop-color="#0b1630"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Camera -->
+  <rect class="card" x="10" y="35" width="200" height="160" rx="14"/>
+  <g transform="translate(62 58)">
+    <rect class="body" x="30" y="0" width="36" height="16" rx="4"/>
+    <rect class="body" x="0" y="10" width="96" height="58" rx="10"/>
+    <circle class="lensring" cx="48" cy="40" r="23"/>
+    <circle cx="48" cy="40" r="18" fill="url(#glass)"/>
+    <circle cx="41" cy="33" r="3.5" fill="#fff" opacity=".75"/>
+    <circle cx="82" cy="22" r="4" fill="#e62e2e"/>
+  </g>
+  <text class="title" x="110" y="158" text-anchor="middle">Canon EOS camera</text>
+  <text class="sub" x="110" y="178" text-anchor="middle">in movie mode</text>
+
+  <!-- Arrow 1 -->
+  <line class="flow" x1="222" y1="115" x2="322" y2="115" stroke-width="2.5"/>
+  <path class="flowhead" d="M322 108 L336 115 L322 122 Z"/>
+  <text class="label" x="279" y="100" text-anchor="middle">USB</text>
+  <text class="label" x="279" y="140" text-anchor="middle">live view</text>
+  <text class="label" x="279" y="156" text-anchor="middle">up to 60 fps</text>
+
+  <!-- Shutterlink -->
+  <rect class="card" x="345" y="35" width="200" height="160" rx="14" stroke-width="2" style="stroke:#2563eb"/>
+  <g transform="translate(415 55)">
+    <rect x="18" y="0" width="24" height="12" rx="3" fill="#26282e"/>
+    <rect x="0" y="8" width="60" height="38" rx="7" fill="#26282e" stroke="#969ba5" stroke-width="1.5"/>
+    <circle cx="30" cy="28" r="14.5" fill="#969ba5"/>
+    <circle cx="30" cy="28" r="11" fill="url(#glass)"/>
+    <circle cx="25" cy="23" r="2.5" fill="#fff" opacity=".8"/>
+    <circle cx="51" cy="18" r="3.4" fill="#e62e2e"/>
+  </g>
+  <text class="title" x="445" y="128" text-anchor="middle">Shutterlink</text>
+  <text class="sub" x="445" y="150" text-anchor="middle">controls the camera,</text>
+  <text class="sub" x="445" y="167" text-anchor="middle">scales and converts</text>
+  <text class="sub" x="445" y="184" text-anchor="middle">each frame</text>
+
+  <!-- Arrow 2 -->
+  <line class="flow" x1="557" y1="115" x2="657" y2="115" stroke-width="2.5"/>
+  <path class="flowhead" d="M657 108 L671 115 L657 122 Z"/>
+  <text class="label" x="614" y="100" text-anchor="middle">Windows camera</text>
+  <text class="label" x="614" y="140" text-anchor="middle">up to 1080p</text>
+
+  <!-- Apps -->
+  <rect class="card" x="680" y="20" width="190" height="190" rx="14"/>
+  <text class="title" x="775" y="50" text-anchor="middle">Any app</text>
+  <g>
+    <rect class="chip" x="700" y="64" width="72" height="28" rx="14"/><text class="chiptext" x="736" y="83" text-anchor="middle">Zoom</text>
+    <rect class="chip" x="780" y="64" width="72" height="28" rx="14"/><text class="chiptext" x="816" y="83" text-anchor="middle">Teams</text>
+    <rect class="chip" x="700" y="100" width="72" height="28" rx="14"/><text class="chiptext" x="736" y="119" text-anchor="middle">Discord</text>
+    <rect class="chip" x="780" y="100" width="72" height="28" rx="14"/><text class="chiptext" x="816" y="119" text-anchor="middle">OBS</text>
+    <rect class="chip" x="700" y="136" width="152" height="28" rx="14"/><text class="chiptext" x="776" y="155" text-anchor="middle">Browsers</text>
+    <rect class="chip" x="700" y="172" width="152" height="28" rx="14"/><text class="chiptext" x="776" y="191" text-anchor="middle">Windows Camera</text>
+  </g>
+</svg>

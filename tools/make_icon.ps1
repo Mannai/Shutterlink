@@ -96,3 +96,9 @@ for ($i = 0; $i -lt $sizes.Count; $i++) {
 foreach ($p in $pngs) { $w.Write($p) }
 $w.Close()
 "wrote $out"
+
+# The 256 px entry is a PNG; reuse it as the README logo.
+$logo = Join-Path $PSScriptRoot '..\docs\media\icon.png'
+New-Item -ItemType Directory -Force (Split-Path $logo) | Out-Null
+[System.IO.File]::WriteAllBytes($logo, $pngs[$sizes.IndexOf(256)])
+"wrote $logo"

@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 540 380" width="540" height="380" font-family="Segoe UI, -apple-system, Helvetica, Arial, sans-serif">
+  <style>
+    .frame { fill: #f3f3f3; stroke: #cfcfcf; }
+    .titletext { fill: #1a1a1a; font-size: 12.5px; }
+    .bar { fill: #f0f0f0; }
+    .bartext { fill: #1a1a1a; font-size: 12px; }
+    .button { fill: #fdfdfd; stroke: #c4c4c4; }
+    .glyph { stroke: #1a1a1a; }
+    @media (prefers-color-scheme: dark) {
+      .frame { fill: #202020; stroke: #3c3c3c; }
+      .titletext, .bartext { fill: #f0f0f0; }
+      .bar { fill: #2b2b2b; }
+      .button { fill: #373737; stroke: #505050; }
+      .glyph { stroke: #f0f0f0; }
+    }
+  </style>
+  <defs>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="125%">
+      <feDropShadow dx="0" dy="6" stdDeviation="7" flood-color="#000" flood-opacity=".22"/>
+    </filter>
+    <filter id="blur"><feGaussianBlur stdDeviation="7"/></filter>
+    <linearGradient id="wall" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6b7f99"/>
+      <stop offset=".55" stop-color="#3e4a5d"/>
+      <stop offset="1" stop-color="#232a36"/>
+    </linearGradient>
+    <linearGradient id="person" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#d9a98a"/>
+      <stop offset="1" stop-color="#b98468"/>
+    </linearGradient>
+    <linearGradient id="shirt" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2f5da8"/>
+      <stop offset="1" stop-color="#1e3f78"/>
+    </linearGradient>
+    <clipPath id="view"><rect x="14" y="44" width="512" height="288"/></clipPath>
+  </defs>
+
+  <!-- Window -->
+  <rect class="frame" x="12" y="12" width="516" height="352" rx="8" filter="url(#shadow)"/>
+  <g transform="translate(24 20) scale(.5)">
+    <rect x="11" y="5" width="10" height="6" rx="1.5" fill="#26282e"/>
+    <rect x="2" y="9" width="28" height="18" rx="3.5" fill="#26282e" stroke="#969ba5" stroke-width="1.2"/>
+    <circle cx="16" cy="18" r="7" fill="#969ba5"/><circle cx="16" cy="18" r="5.3" fill="#2d5aa0"/>
+    <circle cx="25" cy="13" r="2" fill="#e62e2e"/>
+  </g>
+  <text class="titletext" x="48" y="33">Shutterlink — Focus point</text>
+  <g class="glyph" stroke-width="1.1"><line x1="500" y1="23" x2="510" y2="33"/><line x1="510" y1="23" x2="500" y2="33"/></g>
+  <g class="glyph" stroke-width="1.1"><line x1="456" y1="28.5" x2="466" y2="28.5"/></g>
+
+  <!-- Live thumbnail (illustration) -->
+  <g clip-path="url(#view)">
+    <rect x="14" y="44" width="512" height="288" fill="url(#wall)"/>
+    <g filter="url(#blur)" opacity=".85">
+      <rect x="380" y="70" width="110" height="150" rx="6" fill="#9fb4cc"/>
+      <circle cx="80" cy="110" r="22" fill="#f2c56b"/>
+      <rect x="40" y="230" width="140" height="120" fill="#2a2f38"/>
+      <circle cx="430" cy="270" r="16" fill="#7fb07a"/>
+    </g>
+    <path d="M150 332 C160 262 196 240 246 238 C296 240 332 262 342 332 Z" fill="url(#shirt)"/>
+    <rect x="232" y="196" width="28" height="36" rx="10" fill="url(#person)"/>
+    <ellipse cx="246" cy="160" rx="40" ry="48" fill="url(#person)"/>
+    <path d="M206 150 C206 110 230 100 248 100 C272 100 290 116 288 148 C280 128 262 122 246 124 C228 124 214 134 206 150 Z" fill="#3a2a22"/>
+  </g>
+
+  <!-- 8 x 5 grid: dark then light, offset, as the app draws it -->
+  <g stroke="#000" stroke-opacity=".55" stroke-width="1" transform="translate(1 1)">
+    <path d="M78 44V332M142 44V332M206 44V332M270 44V332M334 44V332M398 44V332M462 44V332"/>
+    <path d="M14 101.6H526M14 159.2H526M14 216.8H526M14 274.4H526"/>
+  </g>
+  <g stroke="#c8c8c8" stroke-width="1">
+    <path d="M78 44V332M142 44V332M206 44V332M270 44V332M334 44V332M398 44V332M462 44V332"/>
+    <path d="M14 101.6H526M14 159.2H526M14 216.8H526M14 274.4H526"/>
+  </g>
+  <!-- Selected square -->
+  <rect x="208" y="103.6" width="60" height="53.6" fill="none" stroke="#ffd200" stroke-width="3"/>
+
+  <!-- Bottom strip -->
+  <path class="bar" d="M13 332H527V356a8 8 0 0 1 -8 8H21a8 8 0 0 1 -8 -8Z"/>
+  <text class="bartext" x="22" y="352">Click a square to focus there</text>
+  <rect class="button" x="404" y="336" width="116" height="23" rx="4"/>
+  <text class="bartext" x="462" y="352" text-anchor="middle">Autofocus now</text>
+</svg>
