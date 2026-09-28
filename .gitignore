@@ -8,6 +8,7 @@ dist/
 .vscode/
 *.user
 
-# Captured test frames
+# Captured test frames (but keep the documentation images)
 *.bmp
 *.jpg
+!docs/media/*.jpg
