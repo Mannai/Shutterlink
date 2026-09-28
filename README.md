@@ -110,6 +110,11 @@ Then run `bin\Shutterlink.exe --install` from an administrator prompt.
 
 A log is written to `%LOCALAPPDATA%\Shutterlink\shutterlink.log`.
 
+## Support
+
+Shutterlink is free and always will be. If it saved you a subscription or a capture card,
+you can buy me a coffee on [Ko-fi](https://ko-fi.com/mmannai).
+
 ## Credits
 
 Canon's PTP extensions are not publicly documented by Canon. Shutterlink relies on protocol
