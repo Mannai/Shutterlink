@@ -27,7 +27,7 @@
 </p>
 
 <p align="center">
-  <a href="docs/media/shutterlink-demo.mp4"><img src="docs/media/demo-poster.jpg" width="880" alt="Watch the 20-second Shutterlink demo"></a>
+  <a href="https://github.com/Mannai/Shutterlink/raw/main/docs/media/shutterlink-demo.mp4"><img src="docs/media/demo-poster.jpg" width="880" alt="Watch the 20-second Shutterlink demo"></a>
 </p>
 
 <p align="center">
