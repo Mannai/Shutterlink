@@ -1,10 +1,25 @@
 # User guide
 
+- [Install, update and uninstall](#install-update-and-uninstall)
 - [Camera setup](#camera-setup)
 - [Using Shutterlink in an app](#using-shutterlink-in-an-app)
 - [The tray menu](#the-tray-menu)
 - [Focus point window](#focus-point-window)
 - [Troubleshooting](#troubleshooting)
+
+## Install, update and uninstall
+
+Shutterlink is a single file, `Shutterlink.exe`.
+
+- **Install:** double-click it and choose **Yes**. Windows asks for administrator permission once, because the camera
+  is registered for every user of the PC. A camera icon appears in the taskbar.
+- **Update:** double-click a newer `Shutterlink.exe` and choose **Yes**. Settings are kept.
+- **Uninstall:** **Settings ▸ Apps ▸ Installed apps ▸ Shutterlink ▸ Uninstall** (or *Programs and Features* in the
+  Control Panel). This removes the camera, the files, the startup entry and Shutterlink's settings. If an app was
+  using the camera recently, Windows may hold one file until the next restart; it is deleted then.
+
+For scripted installs: `Shutterlink.exe --install`, and
+`"C:\Program Files\Shutterlink\Shutterlink.exe" --uninstall --quiet`.
 
 ## Camera setup
 
@@ -77,7 +92,7 @@ see.
 
 | Problem | What to try |
 |---|---|
-| Apps don't list Shutterlink | Run `Shutterlink.exe --install` again from an admin terminal, then restart the app |
+| Apps don't list Shutterlink | Run `Shutterlink.exe` again and choose **Yes** to reinstall, then restart the app |
 | Black picture | Check the tray status. *Waiting for the camera* means Shutterlink can't reach it: turn the camera on, check the cable, quit EOS Utility |
 | 30 fps instead of 60 | Set movie recording size to 59.94p, and use a USB 3 cable and port |
 | ISO / shutter / aperture greyed out | Switch the camera's movie exposure to M |

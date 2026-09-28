@@ -27,7 +27,8 @@ Canon camera ──USB/PTP──► Shutterlink.exe ──shared memory──►
 - The camera is only put into PC live view while the source reports that an app is pulling frames.
 
 **ShutterlinkSource.dll** is a Media Foundation media source (`IMFMediaSourceEx`, one video stream, `IKsControl`
-stubbed) exposed through an `IMFActivate`. `Shutterlink.exe --install` registers it and creates a system-wide virtual
+stubbed) exposed through an `IMFActivate`. It is embedded in `Shutterlink.exe` as a resource; `--install` unpacks it to
+`C:\Program Files\Shutterlink`, registers it and creates a system-wide virtual
 camera with `MFCreateVirtualCamera`. The Frame Server service (running as LocalService in session 0) loads it when an
 app opens the camera.
 
@@ -43,24 +44,27 @@ Requirements:
 - Windows 11 SDK 10.0.22000 or newer (for `mfsensorgroup.lib` / `MFCreateVirtualCamera`)
 
 ```powershell
-.\build.ps1                     # bin\Shutterlink.exe and bin\ShutterlinkSource.dll
+.\build.ps1                     # bin\Shutterlink.exe, with bin\ShutterlinkSource.dll embedded in it
 .\build.ps1 -Target tools       # diagnostic tools in bin\tools
-.\build.ps1 -Package 0.2.0      # also writes dist\Shutterlink-0.2.0-win64.zip
+.\build.ps1 -Package            # also copies the release exe to dist\Shutterlink.exe
 ```
 
-Binaries link the C runtime statically (`/MT`), so they need no Visual C++ redistributable.
+The version comes from the `VERSION` file (override with `-Version 1.2.3`) and is written into the exe's file
+properties and the Settings ▸ Apps entry. Binaries link the C runtime statically (`/MT`), so they need no Visual C++
+redistributable.
 
-To try a build, run `bin\Shutterlink.exe --install` from an admin terminal. Re-running `--install` upgrades in place:
-it stops the running instance, and if the Frame Server still has the old DLL loaded, moves it aside and schedules it
-for deletion at the next restart.
+To try a build, run `bin\Shutterlink.exe --install` (it asks for elevation itself). Re-running `--install` upgrades in
+place: it stops the running instance, and if the Frame Server still has the old DLL loaded, moves it aside and
+schedules it for deletion at the next restart. `--install` also registers the uninstall entry under
+`HKLM\Software\Microsoft\Windows\CurrentVersion\Uninstall\Shutterlink`, which runs `--uninstall`.
 
 `tools\make_icon.ps1` regenerates `src\app\shutterlink.ico` and `docs\media\icon.png`.
 
 ## Releasing
 
-Pushing a tag `v<version>` runs the [build workflow](../.github/workflows/build.yml), which builds the release zip and
-publishes it as a GitHub Release. Every push and pull request is built too, with the zip attached as a workflow
-artifact.
+Pushing a tag `v<version>` runs the [build workflow](../.github/workflows/build.yml), which builds `Shutterlink.exe` with
+the tag's version and publishes it as a GitHub Release. Every push and pull request is built too, with the exe attached
+as a workflow artifact. Bump `VERSION` along with the tag.
 
 ## Diagnostic tools
 

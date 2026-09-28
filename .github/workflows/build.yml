@@ -21,19 +21,19 @@ jobs:
       - name: Build
         shell: pwsh
         run: |
-          $version = if ($env:GITHUB_REF_TYPE -eq 'tag') { $env:GITHUB_REF_NAME.TrimStart('v') } else { "dev-$($env:GITHUB_SHA.Substring(0, 7))" }
-          .\build.ps1 -Package $version
-          .\build.ps1 -Target tools
+          $version = if ($env:GITHUB_REF_TYPE -eq 'tag') { $env:GITHUB_REF_NAME.TrimStart('v') } else { (Get-Content VERSION -Raw).Trim() }
+          .\build.ps1 -Version $version -Package
+          .\build.ps1 -Version $version -Target tools
           "VERSION=$version" | Out-File -Append $env:GITHUB_ENV
 
       - uses: actions/upload-artifact@v4
         with:
-          name: Shutterlink-${{ env.VERSION }}-win64
-          path: dist/*.zip
+          name: Shutterlink-${{ env.VERSION }}
+          path: dist/Shutterlink.exe
 
       - name: Publish release
         if: github.ref_type == 'tag'
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create $env:GITHUB_REF_NAME dist/*.zip --title "Shutterlink $env:VERSION" --generate-notes
+        run: gh release create $env:GITHUB_REF_NAME dist/Shutterlink.exe --title "Shutterlink $env:VERSION" --generate-notes

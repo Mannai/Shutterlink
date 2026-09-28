@@ -4,3 +4,4 @@
 #pragma once
 
 #define IDI_SHUTTERLINK 101
+#define IDR_SOURCE_DLL 201  // ShutterlinkSource.dll, unpacked by --install

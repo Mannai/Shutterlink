@@ -31,6 +31,7 @@
 #include "focus_window.h"
 #include "frame_writer.h"
 #include "resource.h"
+#include "version.h"
 
 namespace fs = std::filesystem;
 using Microsoft::WRL::ComPtr;
@@ -650,6 +651,8 @@ int RunTray(HINSTANCE instance, bool announce) {
 
 // ---------------------------------------------------------------- install
 
+constexpr wchar_t kUninstallKey[] = L"Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Shutterlink";
+
 fs::path InstallDir() {
     PWSTR pf = nullptr;
     SHGetKnownFolderPath(FOLDERID_ProgramFiles, 0, nullptr, &pf);
@@ -658,10 +661,40 @@ fs::path InstallDir() {
     return p;
 }
 
-fs::path SelfDir() {
+fs::path SelfPath() {
     wchar_t path[MAX_PATH];
     GetModuleFileNameW(nullptr, path, MAX_PATH);
-    return fs::path(path).parent_path();
+    return fs::path(path);
+}
+
+bool IsElevated() {
+    HANDLE token = nullptr;
+    TOKEN_ELEVATION elevation{};
+    DWORD size = 0;
+    bool elevated = false;
+    if (OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &token)) {
+        if (GetTokenInformation(token, TokenElevation, &elevation, sizeof(elevation), &size))
+            elevated = elevation.TokenIsElevated != 0;
+        CloseHandle(token);
+    }
+    return elevated;
+}
+
+// Re-runs this exe as administrator (UAC prompt) and waits for it. 1223 = the user said no.
+int RunElevated(const wchar_t* args) {
+    std::wstring self = SelfPath().wstring();
+    SHELLEXECUTEINFOW info{sizeof(info)};
+    info.fMask = SEE_MASK_NOCLOSEPROCESS;
+    info.lpVerb = L"runas";
+    info.lpFile = self.c_str();
+    info.lpParameters = args;
+    info.nShow = SW_SHOWNORMAL;
+    if (!ShellExecuteExW(&info)) return static_cast<int>(GetLastError());
+    WaitForSingleObject(info.hProcess, INFINITE);
+    DWORD code = 1;
+    GetExitCodeProcess(info.hProcess, &code);
+    CloseHandle(info.hProcess);
+    return static_cast<int>(code);
 }
 
 void StopRunningInstance() {
@@ -673,25 +706,22 @@ void StopRunningInstance() {
     }
 }
 
-// Replaces a file that may be loaded (the DLL inside the Frame Server): move it aside first.
-bool SameContents(const fs::path& a, const fs::path& b) {
-    std::error_code ec;
-    if (!fs::exists(b, ec) || fs::file_size(a, ec) != fs::file_size(b, ec)) return false;
-    FILE *fa = nullptr, *fb = nullptr;
-    bool same = !_wfopen_s(&fa, a.c_str(), L"rb") && !_wfopen_s(&fb, b.c_str(), L"rb");
-    char ba[65536], bb[65536];
-    while (same) {
-        size_t na = fread(ba, 1, sizeof(ba), fa), nb = fread(bb, 1, sizeof(bb), fb);
-        same = na == nb && memcmp(ba, bb, na) == 0;
-        if (na == 0) break;
-    }
-    if (fa) fclose(fa);
-    if (fb) fclose(fb);
-    return same;
+bool ReadFileBytes(const fs::path& path, std::vector<uint8_t>& out) {
+    FILE* f = nullptr;
+    if (_wfopen_s(&f, path.c_str(), L"rb")) return false;
+    out.clear();
+    uint8_t buf[65536];
+    for (size_t n; (n = fread(buf, 1, sizeof(buf), f)) > 0;) out.insert(out.end(), buf, buf + n);
+    fclose(f);
+    return true;
 }
 
-bool CopyReplacing(const fs::path& from, const fs::path& to) {
-    if (SameContents(from, to)) return true;
+// Writes `data` to `to`. A file that is in use (the DLL inside the Frame Server, a running
+// exe) is moved aside and deleted at the next restart.
+bool WriteReplacing(const fs::path& to, const uint8_t* data, size_t size) {
+    std::vector<uint8_t> existing;
+    if (ReadFileBytes(to, existing) && existing.size() == size && memcmp(existing.data(), data, size) == 0)
+        return true;
     std::error_code ec;
     for (auto& e : fs::directory_iterator(to.parent_path(), ec))  // tidy earlier leftovers
         if (e.path().extension() == L".old") fs::remove(e.path(), ec);
@@ -703,7 +733,19 @@ bool CopyReplacing(const fs::path& from, const fs::path& to) {
         if (!MoveFileExW(to.c_str(), old.c_str(), 0)) return false;
         MoveFileExW(old.c_str(), nullptr, MOVEFILE_DELAY_UNTIL_REBOOT);
     }
-    return fs::copy_file(from, to, fs::copy_options::overwrite_existing, ec);
+    FILE* f = nullptr;
+    if (_wfopen_s(&f, to.c_str(), L"wb")) return false;
+    bool ok = fwrite(data, 1, size, f) == size;
+    return fclose(f) == 0 && ok;
+}
+
+// The camera source DLL travels inside the exe as a resource.
+bool EmbeddedSourceDll(const uint8_t*& data, size_t& size) {
+    HRSRC res = FindResourceW(nullptr, MAKEINTRESOURCEW(IDR_SOURCE_DLL), RT_RCDATA);
+    HGLOBAL mem = res ? LoadResource(nullptr, res) : nullptr;
+    data = mem ? static_cast<const uint8_t*>(LockResource(mem)) : nullptr;
+    size = res ? SizeofResource(nullptr, res) : 0;
+    return data && size;
 }
 
 HRESULT CallDllExport(const fs::path& dll, const char* name) {
@@ -729,16 +771,58 @@ int Fail(const wchar_t* step, HRESULT hr) {
     return 1;
 }
 
+void SetString(HKEY key, const wchar_t* name, const std::wstring& value) {
+    RegSetValueExW(key, name, 0, REG_SZ, reinterpret_cast<const BYTE*>(value.c_str()),
+                   static_cast<DWORD>((value.size() + 1) * sizeof(wchar_t)));
+}
+
+void SetDword(HKEY key, const wchar_t* name, DWORD value) {
+    RegSetValueExW(key, name, 0, REG_DWORD, reinterpret_cast<const BYTE*>(&value), sizeof(value));
+}
+
+// Makes Shutterlink appear in Settings > Apps (and Control Panel), with Uninstall wired up.
+void RegisterUninstallEntry(const fs::path& dir, size_t bytes) {
+    HKEY key;
+    if (RegCreateKeyExW(HKEY_LOCAL_MACHINE, kUninstallKey, 0, nullptr, 0, KEY_WRITE, nullptr, &key, nullptr) !=
+        ERROR_SUCCESS)
+        return;
+    std::wstring exe = L"\"" + (dir / L"Shutterlink.exe").wstring() + L"\"";
+    SYSTEMTIME t;
+    GetLocalTime(&t);
+    wchar_t date[16];
+    swprintf_s(date, L"%04u%02u%02u", t.wYear, t.wMonth, t.wDay);
+    SetString(key, L"DisplayName", L"Shutterlink");
+    SetString(key, L"DisplayVersion", SL_VERSION_WSTR);
+    SetString(key, L"Publisher", L"Mannai");
+    SetString(key, L"DisplayIcon", (dir / L"Shutterlink.exe").wstring() + L",0");
+    SetString(key, L"InstallLocation", dir.wstring());
+    SetString(key, L"InstallDate", date);
+    SetString(key, L"UninstallString", exe + L" --uninstall");
+    SetString(key, L"QuietUninstallString", exe + L" --uninstall --quiet");
+    SetString(key, L"URLInfoAbout", L"https://github.com/Mannai/Shutterlink");
+    SetString(key, L"HelpLink", L"https://github.com/Mannai/Shutterlink/issues");
+    SetDword(key, L"EstimatedSize", static_cast<DWORD>(bytes / 1024));
+    SetDword(key, L"NoModify", 1);
+    SetDword(key, L"NoRepair", 1);
+    RegCloseKey(key);
+}
+
 int Install() {
-    Log(L"install: starting");
+    if (!IsElevated()) return RunElevated(L"--install");
+    Log(L"install: starting (version %ls)", SL_VERSION_WSTR);
     StopRunningInstance();
-    fs::path dir = InstallDir(), src = SelfDir();
+    fs::path dir = InstallDir();
     std::error_code ec;
     fs::create_directories(dir, ec);
-    for (const wchar_t* f : {L"Shutterlink.exe", L"ShutterlinkSource.dll"}) {
-        if (src != dir && !CopyReplacing(src / f, dir / f))
-            return Fail(L"Copying files", HRESULT_FROM_WIN32(GetLastError()));
-    }
+
+    std::vector<uint8_t> exe;
+    const uint8_t* dll = nullptr;
+    size_t dllSize = 0;
+    if (!ReadFileBytes(SelfPath(), exe) || !EmbeddedSourceDll(dll, dllSize))
+        return Fail(L"Reading the installer", HRESULT_FROM_WIN32(GetLastError()));
+    if (!WriteReplacing(dir / L"Shutterlink.exe", exe.data(), exe.size()) ||
+        !WriteReplacing(dir / L"ShutterlinkSource.dll", dll, dllSize))
+        return Fail(L"Copying files", HRESULT_FROM_WIN32(GetLastError()));
 
     HRESULT hr = CallDllExport(dir / L"ShutterlinkSource.dll", "DllRegisterServer");
     if (FAILED(hr)) return Fail(L"Registering the camera source", hr);
@@ -748,19 +832,19 @@ int Install() {
     if (SUCCEEDED(hr)) hr = camera->Start(nullptr);
     if (FAILED(hr)) return Fail(L"Creating the virtual camera", hr);
 
-    std::wstring cmd = L"\"" + (dir / L"Shutterlink.exe").wstring() + L"\" --startup";
     HKEY run;
     if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, kRunKey, 0, KEY_SET_VALUE, &run) == ERROR_SUCCESS) {
-        RegSetValueExW(run, L"Shutterlink", 0, REG_SZ, reinterpret_cast<const BYTE*>(cmd.c_str()),
-                       static_cast<DWORD>((cmd.size() + 1) * sizeof(wchar_t)));
+        SetString(run, L"Shutterlink", L"\"" + (dir / L"Shutterlink.exe").wstring() + L"\" --startup");
         RegCloseKey(run);
     }
+    RegisterUninstallEntry(dir, exe.size() + dllSize);
     ShellExecuteW(nullptr, nullptr, (dir / L"Shutterlink.exe").c_str(), nullptr, nullptr, SW_SHOWNORMAL);
     Log(L"install: done");
     return 0;
 }
 
-int Uninstall() {
+int Uninstall(bool quiet) {
+    if (!IsElevated()) return RunElevated(quiet ? L"--uninstall --quiet" : L"--uninstall");
     Log(L"uninstall: starting");
     StopRunningInstance();
     ComPtr<IMFVirtualCamera> camera;
@@ -775,13 +859,43 @@ int Uninstall() {
         RegDeleteValueW(run, L"Shutterlink");
         RegCloseKey(run);
     }
+    RegDeleteTreeW(HKEY_LOCAL_MACHINE, kUninstallKey);
+    RegDeleteTreeW(HKEY_CURRENT_USER, kSettingsKey);
+
+    // Delete what we can now. Files still in use (this exe, a DLL the camera service holds)
+    // go at the next restart, and a helper removes the folder once this process has exited.
     std::error_code ec;
-    for (auto& e : fs::directory_iterator(dir, ec)) {
+    for (auto& e : fs::directory_iterator(dir, ec))
         if (!fs::remove(e.path(), ec)) MoveFileExW(e.path().c_str(), nullptr, MOVEFILE_DELAY_UNTIL_REBOOT);
+    if (!fs::remove(dir, ec)) {
+        MoveFileExW(dir.c_str(), nullptr, MOVEFILE_DELAY_UNTIL_REBOOT);
+        std::wstring cmd = L"powershell.exe -NoProfile -NonInteractive -WindowStyle Hidden -Command \"Wait-Process -Id " +
+                           std::to_wstring(GetCurrentProcessId()) + L" -ErrorAction SilentlyContinue; Remove-Item -LiteralPath '" +
+                           dir.wstring() + L"' -Recurse -Force -ErrorAction SilentlyContinue\"";
+        STARTUPINFOW si{sizeof(si)};
+        PROCESS_INFORMATION pi{};
+        if (CreateProcessW(nullptr, cmd.data(), nullptr, nullptr, FALSE, CREATE_NO_WINDOW, nullptr, nullptr, &si,
+                           &pi)) {
+            CloseHandle(pi.hThread);
+            CloseHandle(pi.hProcess);
+        }
     }
-    if (!fs::remove(dir, ec)) MoveFileExW(dir.c_str(), nullptr, MOVEFILE_DELAY_UNTIL_REBOOT);
     Log(L"uninstall: done");
+    if (!quiet) MessageBoxW(nullptr, L"Shutterlink has been removed from this PC.", L"Shutterlink", MB_ICONINFORMATION);
     return 0;
+}
+
+// Double-clicked outside Program Files (e.g. straight from Downloads): offer to install.
+int OfferInstall() {
+    std::error_code ec;
+    bool installed = fs::exists(InstallDir() / L"Shutterlink.exe", ec);
+    std::wstring text = installed
+        ? std::wstring(L"Update Shutterlink to version ") + SL_VERSION_WSTR + L"?"
+        : std::wstring(L"Install Shutterlink ") + SL_VERSION_WSTR +
+              L"?\n\nYour Canon camera will appear as a webcam named “Shutterlink” in every app. "
+              L"Shutterlink starts with Windows and can be removed any time from Settings ▸ Apps.";
+    if (MessageBoxW(nullptr, text.c_str(), L"Shutterlink", MB_YESNO | MB_ICONQUESTION) != IDYES) return 0;
+    return Install();
 }
 
 }  // namespace
@@ -791,10 +905,14 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR cmdLine, int) {
     if (FAILED(CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED))) return 1;
     MFStartup(MF_VERSION);
     std::wstring args = cmdLine ? cmdLine : L"";
+    auto has = [&](const wchar_t* flag) { return args.find(flag) != std::wstring::npos; };
+    std::error_code ec;
+    bool fromInstallDir = fs::equivalent(SelfPath().parent_path(), InstallDir(), ec);
     int rc;
-    if (args.find(L"--uninstall") != std::wstring::npos) rc = Uninstall();
-    else if (args.find(L"--install") != std::wstring::npos) rc = Install();
-    else rc = RunTray(instance, args.find(L"--startup") == std::wstring::npos);
+    if (has(L"--uninstall")) rc = Uninstall(has(L"--quiet"));
+    else if (has(L"--install")) rc = Install();
+    else if (!fromInstallDir) rc = OfferInstall();
+    else rc = RunTray(instance, !has(L"--startup"));
     MFShutdown();
     CoUninitialize();
     return rc;

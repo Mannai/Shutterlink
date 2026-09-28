@@ -74,16 +74,15 @@ starts quietly with Windows.
 Shutterlink runs on **Windows 11** (64-bit). It is developed and tested with the **Canon EOS R6**; other EOS bodies
 that support live view over USB will probably work — see [camera compatibility](docs/LIMITATIONS.md#camera-compatibility).
 
-1. Download `Shutterlink-<version>-win64.zip` from the [latest release](https://github.com/Mannai/Shutterlink/releases/latest) and unzip it.
-2. Open **Terminal (Admin)** in that folder and run:
-   ```
-   .\Shutterlink.exe --install
-   ```
+1. Download **[Shutterlink.exe](https://github.com/Mannai/Shutterlink/releases/latest/download/Shutterlink.exe)**
+   from the latest release.
+2. Double-click it and choose **Yes** to install. Windows asks for administrator permission once.
 3. Connect the camera with a USB cable, set it to **movie mode**, turn it on — and pick **Shutterlink** as the
    camera in your app.
 
-The installer copies Shutterlink to `C:\Program Files\Shutterlink`, registers the camera with Windows and starts it at
-sign-in. To remove everything: `"C:\Program Files\Shutterlink\Shutterlink.exe" --uninstall` from an admin terminal.
+Shutterlink installs to `C:\Program Files\Shutterlink`, registers the camera with Windows and starts at sign-in. To
+update, run a newer `Shutterlink.exe` the same way. To uninstall, open **Settings ▸ Apps ▸ Installed apps**, find
+**Shutterlink** and choose **Uninstall**.
 
 The release is not code-signed, so Windows SmartScreen may warn the first time; choose **More info ▸ Run anyway**, or
 [build it yourself](docs/DEVELOPMENT.md). Every release is built by GitHub Actions straight from the tagged source.
