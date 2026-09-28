@@ -1,0 +1,6 @@
+// Copyright (C) 2026 Mannai
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+#include "resource.h"
+
+IDI_SHUTTERLINK ICON "shutterlink.ico"

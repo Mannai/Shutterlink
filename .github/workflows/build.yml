@@ -1,0 +1,39 @@
+# Copyright (C) 2026 Mannai
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+name: build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build
+        shell: pwsh
+        run: |
+          $version = if ($env:GITHUB_REF_TYPE -eq 'tag') { $env:GITHUB_REF_NAME.TrimStart('v') } else { "dev-$($env:GITHUB_SHA.Substring(0, 7))" }
+          .\build.ps1 -Package $version
+          .\build.ps1 -Target tools
+          "VERSION=$version" | Out-File -Append $env:GITHUB_ENV
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Shutterlink-${{ env.VERSION }}-win64
+          path: dist/*.zip
+
+      - name: Publish release
+        if: github.ref_type == 'tag'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create $env:GITHUB_REF_NAME dist/*.zip --title "Shutterlink $env:VERSION" --generate-notes

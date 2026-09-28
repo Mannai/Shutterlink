@@ -1,0 +1,13 @@
+# Build output
+bin/
+obj/
+dist/
+
+# Editor and IDE files
+.vs/
+.vscode/
+*.user
+
+# Captured test frames
+*.bmp
+*.jpg
